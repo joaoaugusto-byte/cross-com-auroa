@@ -1,0 +1,1440 @@
+<meta charset="utf-8">
+<title>Cross-Com Auroa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Terminal tático dos Ghosts com o dossiê completo de Ghost Recon Breakpoint para partida imersiva e solo: dez volumes, carta do arquipélago, bestiário ilustrado e linha de comando.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="terminal.css">
+<link rel="stylesheet" href="componentes.css">
+
+<div class="scan" aria-hidden="true"></div>
+<div class="varredura" id="varredura" aria-hidden="true"></div>
+
+<div class="boot" id="boot" role="status" aria-live="polite">
+  <div class="linhas" id="boot-linhas"></div>
+  <div class="pular" id="boot-pular"></div>
+  <button type="button" class="som-btn" id="som-btn" data-on="nao">⊘ som desligado · ativar</button>
+</div>
+
+<!-- Queda de enlace. Não é uma reinicialização: o dossiê fica montado
+     atrás, e cada opção devolve o leitor ao mesmo volume e à mesma
+     altura de rolagem em que ele estava. -->
+<div class="queda" id="queda" hidden>
+  <div class="q-dentro">
+    <p class="q-grito">!! PORTADORA LOCALIZADA !!</p>
+    <div class="q-log" id="q-log"></div>
+    <p class="q-instru" id="q-instru">escolha por onde voltar — o dossiê continua aberto de onde você parou.</p>
+    <div class="q-opcoes" id="q-opcoes"></div>
+  </div>
+</div>
+
+<div class="term" id="term" data-pronto="nao">
+
+  <header class="term-head">
+    <span class="marca"><i></i>Cross-Com</span>
+    <span class="sep">/</span>
+    <span>Dossiê Auroa</span>
+    <span class="estado">
+      <span class="pulso" id="pulso">● Enlace</span>
+      <span class="varr" id="chip-varredura" hidden>▲ Varredura</span>
+      <span class="azr" id="chip-azrael" hidden></span>
+      <span class="inv" id="chip-invasao" hidden>◈ Invasão</span>
+      <span class="op">Operador <b>Nomad</b></span>
+      <span class="pf">Perfil <b>Imersivo · Solo</b></span>
+      <span class="rl">Local <b id="relogio">03:12:00</b></span>
+    </span>
+  </header>
+
+  <div class="term-body">
+    <aside class="term-side">
+      <div class="cab">/dossie/auroa &nbsp;·&nbsp; 11 arquivos</div>
+      <nav id="nav" aria-label="Volumes do dossiê"></nav>
+      <div class="rodape">
+        Origem: Erewhon<br>
+        Monte Hodgson<br>
+        Sem spoiler de trama
+      </div>
+    </aside>
+
+    <main class="term-main" id="main" tabindex="-1">
+      <div class="dentro" id="dentro"></div>
+    </main>
+
+    <!-- rádio aberto: ambiente, sem interação. aria-hidden para não
+         interromper quem lê o dossiê com leitor de tela. -->
+    <div class="trafego" id="trafego" aria-hidden="true"></div>
+  </div>
+
+  <footer class="term-foot">
+    <div class="busca" id="busca" hidden></div>
+    <div class="saida" id="saida"></div>
+    <form class="linha-cmd" id="form-cmd" autocomplete="off">
+      <span class="prompt" id="prompt">nomad@erewhon:~$</span>
+      <input id="cmd" name="cmd" aria-label="Linha de comando do terminal" spellcheck="false"
+             placeholder="digite ajuda e pressione enter">
+      <button type="button" class="chave" id="bt-som" aria-pressed="false">som</button>
+      <button type="button" class="chave" id="bt-amb" aria-pressed="true">zumbido</button>
+      <button type="button" class="chave" id="bt-mira" aria-pressed="true">mira</button>
+      <span class="dica">/ foca &nbsp;·&nbsp; ajuda</span>
+    </form>
+  </footer>
+
+</div>
+
+<script src="core.js"></script>
+<script src="figuras.js"></script>
+<script src="som.js"></script>
+<script src="mira.js"></script>
+<script src="trafego.js"></script>
+<script src="vol-a.js"></script>
+<script src="vol-b.js"></script>
+<script src="vol-c.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var D = window.DOSSIE;
+  var reduz = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ═══════════════════════════════════════════
+     VOLUME 00 · o índice, servido pela própria casca
+     ═══════════════════════════════════════════ */
+
+  var VERDADES = [
+    ["O drone é a arma principal",
+     "Antes de qualquer tiro, o ciclo é sempre o mesmo: subir o drone, marcar todo mundo, contar as câmeras e os drones, escolher a ordem. <b>Uma base marcada é uma base resolvida.</b> Uma base não marcada é uma emboscada que você mesmo montou."],
+    ["Sem esquadra, não existe segundo erro",
+     "Sem companheiros de IA não há ninguém para te levantar nem para dividir a atenção do inimigo. <b>Todo plano precisa de uma rota de saída decidida antes do primeiro disparo</b> — mato alto, encosta, água ou veículo com motor já ligado."],
+    ["Lama e barriga no chão vencem drones",
+     "Deitar em vegetação ou lama aplica camuflagem natural. É a resposta gratuita ao <b>Azraël</b>, o drone de varredura: ele passa, você some do radar dele. Teto também serve — ele não enxerga através de telhado."],
+    ["A classe não te prende",
+     "Você troca de classe em qualquer bivaque, sem custo e sem perder progresso. <b>Classe em Breakpoint é ferramenta, não identidade.</b> Escolher errado no começo não tem consequência nenhuma."],
+    ["O bivaque é metade do jogo",
+     "Ali você troca de classe, reequipa, cura ferimento, prepara bônus temporários, escolhe <b>a hora do dia</b> em que vai sair, lê a previsão do tempo e faz nascer um veículo. Entrar numa base às três da manhã é uma decisão de menu."],
+    ["Ferimento não é dano",
+     "Barra de vida volta; ferimento não. Ele fica: leve tira estabilidade da mira e fôlego, grave faz você mancar, sangrar e só atirar de quadril com uma mão. E a economia dos remédios é o contrário do que parece: <b>bandagem é ilimitada e lenta, seringa é escassa e instantânea</b> — e seringa não fecha ferida profunda."]
+  ];
+
+  var INDICE = {
+    id: "v00", cod: "00", nome: "Índice", arquivo: "indice.dat",
+    titulo: "Auroa", subtitulo: "não é hostil. É indiferente.",
+    desc: "Briefing, carta do arquipélago e o mapa dos dez volumes.",
+    cor: "var(--sub)",
+    lede: [
+      "Um dossiê para quem vai entrar sem nível de equipamento, sem minimapa e sem ninguém cobrindo as costas.",
+      "A ilha não escala com você, não te espera e não perdoa pressa. Tudo aqui parte de três escolhas suas: modo imersivo, jogador solo, sem esquadra de IA."
+    ],
+    saltos: [["carta", "A carta"], ["verdades", "Leitura inicial"], ["procedencia", "Procedência"], ["volumes", "Os volumes"]],
+    render: function () {
+      var h = "";
+
+      h += '<section id="carta">' +
+        D.cabSecao("00 · CARTA", "O arquipélago",
+          "Carta esquemática da área de operação, com curvas de nível, isóbatas e contatos. É uma representação estilizada — não reproduz o mapa do jogo, e não substitui abrir o seu.") +
+        '<div class="carta"><canvas id="chart" width="1240" height="560" role="img" ' +
+        'aria-label="Carta topográfica esquemática de um arquipélago, com curvas de nível, chuva e marcadores de contato piscando"></canvas>' +
+        '<div class="selo">Carta esquemática</div>' +
+        '<div class="legenda">' +
+        '<span><i class="terra"></i> Massa de terra</span>' +
+        '<span><i></i> Curva de nível</span>' +
+        '<span style="color:color-mix(in srgb, var(--ruim) 80%, var(--text))"><i style="background:var(--ruim)"></i> Contato</span>' +
+        '<span style="margin-left:auto">Não substitui o mapa do jogo</span>' +
+        "</div></div></section>";
+
+      h += '<div class="sinal"><i></i></div>';
+
+      h += D.transmissao(
+        "Nomad, aqui é Erewhon. Você caiu sozinho e o helicóptero não vem.",
+        "O que muda quando o nível de equipamento some: não existe mais arma melhor, existe arma certa. Uma pistola do primeiro minuto mata um Lobo no último. O que separa você de um inimigo deixa de ser um número e passa a ser a ordem em que vocês se enxergam.");
+
+      h += '<section id="verdades">' +
+        D.cabSecao("01 · LEITURA INICIAL", "Seis coisas que a ilha não vai te contar",
+          "Nenhuma é opinião. São como o jogo funciona no perfil que você escolheu — e cada uma delas custa horas para descobrir sozinho.") +
+        '<div class="pillars">' +
+        VERDADES.map(function (v) {
+          return '<div class="pillar"><h3>' + v[0] + "</h3><p>" + v[1] + "</p></div>";
+        }).join("") +
+        "</div>" +
+        D.nota("Existe uma diferença prática entre Breakpoint com nível de equipamento e sem: com ele, apanhar significa que você chegou cedo demais numa região. <b>Sem ele, apanhar significa que você foi visto primeiro.</b> Toda a dificuldade migra do inventário para a ordem dos acontecimentos.") +
+        "</section>";
+
+      h += '<div class="sinal"><i></i></div>';
+
+      h += '<section id="procedencia">' +
+        D.cabSecao("02 · PROCEDÊNCIA", "De onde vem o que está escrito aqui",
+          "Um compêndio que você consulta jogando vale pelo que acerta, e um erro escrito com confiança custa mais que uma lacuna admitida. Então: o que foi conferido, o que foi corrigido e o que continua sem confirmação.") +
+        '<ul class="tenets">' +
+        "<li><b>Conferido contra fonte</b><span>O comportamento do Azraël e as contramedidas; os nomes e papéis dos drones; as sete classes, e com número exato os passivos, o item e a técnica de cinco delas; a linhagem dos oito drones de combate, com armamento e onde cada um aparece; as funções do bivaque; quem é quem em Erewhon, nos Outcasts e na Sentinel; <b>as 85 armas do jogo</b> nomeadas por categoria; os cinco encaixes da oficina e os acessórios de cada um; os dez ramos da árvore de perícias com o custo em pontos das principais; <b>as províncias de Auroa</b>; e as premissas, datas e conteúdo das expansões.</span></li>" +
+        "<li><b>Corrigido depois de conferir</b><span>Bandagem e seringa estavam trocadas — a bandagem é a ilimitada e lenta, a seringa é a escassa e instantânea, e seringa não fecha ferida profunda. O clima do bivaque é previsão, não escolha. A técnica do Assalto também cura a cada abate. A oficina tem cinco encaixes, não oito — <i>pintura</i> e <i>gatilho</i> nunca foram pontos de modificação. A árvore tem dez ramos, não oito. A Maddox, que aparecia aqui como socorrista, é cientista de inteligência artificial. Dois topônimos eram invenção minha — <i>Liberty</i> e <i>Lake Country</i> não aparecem em Auroa. <b>E aqui eu me corrigi demais:</b> numa primeira passagem tirei também <i>Driftwood</i> e <i>Zona Restrita 01</i>, que existem sim — não como províncias, mas como lugares dentro delas, uma zona de testes e uma oficina de protótipos. Deep State tem oito missões, não dez — além de eu recomendar fazê-la fora de ordem sem avisar que isso quebra a continuidade da história. E dois conselhos de combate estavam errados: o Behemoth <b>tem dispositivo anti-pulso e reinicia sozinho</b>, então pulso eletromagnético resolve muito menos do que eu dizia; e contra o Incubus eu mandava atacar por trás quando o ponto fraco real é <b>subir</b> — ele não vence ladeira. <b>E um veredito inteiro estava errado:</b> eu descrevia o Socorrista como a classe que menos serve para jogo solo, sem ter visto que a passiva <i>Fênix</i> permite <b>se reerguer sozinho</b> com a barra de técnica cheia — literalmente a única coisa no jogo que faz o papel do companheiro que te levanta. O verbete foi reescrito.</span></li>" +
+        "<li><b>Sem confirmação</b><span>O <b>Batedor</b> e o <b>Assalto</b> são as duas classes sem ficha própria na fonte — o que está escrito sobre elas veio de descrição geral e da página de perícias, não de uma página detalhada, e por isso os números dos passivos aparecem sem valor exato. Há também uma <b>contradição dentro da própria fonte</b>: a ficha do Azraël diz que o spray antidrone da Pantera esconde você dele, e a ficha da Pantera diz o contrário, com todas as letras. O texto trata o spray como bônus incerto contra o Azraël, nunca como plano — e há relato não confirmado de que o Behemoth também o ignora. As medidas em metros das pranchas do bestiário são estimativas de proporção, não números oficiais. A carta do arquipélago é esquemática e não reproduz a geografia real de Auroa. E os pontos fortes e fracos de cada arma descrevem o que ela é — calibre, ação, tamanho —, não a ficha numérica do jogo, que muda com o nível do achado e com os acessórios.</span></li>" +
+        "<li><b>Opinião, e marcada como tal</b><span>Tudo que compara classes, sugere ordem de prioridade ou diz o que “vale a pena” é juízo, calibrado para o seu perfil — imersivo, solo, sem esquadra. Onde o texto diz <i>a melhor escolha</i>, leia <i>a melhor escolha para esse perfil</i>.</span></li>" +
+        "</ul>" +
+        "</section>";
+
+      h += D.sinal();
+
+      h += '<section id="volumes">' +
+        D.cabSecao("02 · O DOSSIÊ", "Os dez volumes",
+          "Cada volume abre um assunto inteiro, com as mesmas regras: sistemas explicados à vontade, personagens e contexto nomeados, <b>nenhuma reviravolta de trama revelada</b>. O décimo cobre as expansões de história e corrige o que elas mudam nos anteriores.") +
+        '<div class="grade-indice">' +
+        D.volumes.map(function (v) {
+          return '<button type="button" class="cartao-vol" data-ir="' + v.id + '" style="--c:' + (v.cor || "var(--sub)") + '">' +
+            '<span class="cod">' + v.cod + " · " + v.arquivo + "</span>" +
+            "<h3>" + v.nome + "</h3>" +
+            "<p>" + v.desc + "</p>" +
+            '<span class="abrir">Abrir volume →</span>' +
+            "</button>";
+        }).join("") +
+        "</div></section>";
+
+      return h;
+    },
+    depois: function () { carta(); }
+  };
+
+  /* ═══════════════════════════════════════════
+     A CARTA · campo de altura, contornos e chuva
+     ═══════════════════════════════════════════ */
+
+  var ILHAS = [
+    { x: .30, y: .52, r: .245, f: 1.00 }, { x: .52, y: .34, r: .150, f: .86 },
+    { x: .60, y: .66, r: .140, f: .82 }, { x: .75, y: .44, r: .088, f: .72 },
+    { x: .84, y: .63, r: .062, f: .64 }, { x: .17, y: .24, r: .058, f: .60 },
+    { x: .43, y: .80, r: .054, f: .58 }, { x: .88, y: .26, r: .042, f: .54 },
+    { x: .68, y: .85, r: .038, f: .52 }, { x: .12, y: .76, r: .040, f: .52 }
+  ];
+  var GW = 248, GH = 112, COSTA = 0.30, alturas = new Float32Array(GW * GH);
+  var animando = null;
+
+  function ruidoValor(seed) {
+    var r = D.prng(seed), G = 64, g = new Float32Array(G * G);
+    for (var i = 0; i < g.length; i++) g[i] = r();
+    function at(a, b) { return g[((b % G) + G) % G * G + ((a % G) + G) % G]; }
+    function val(x, y) {
+      var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+      var sx = xf * xf * (3 - 2 * xf), sy = yf * yf * (3 - 2 * yf);
+      var a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1);
+      var t = a + (b - a) * sx;
+      return t + ((c + (d - c) * sx) - t) * sy;
+    }
+    return function (x, y) {
+      var s = 0, amp = .5, f = 1;
+      for (var o = 0; o < 5; o++) { s += val(x * f, y * f) * amp; amp *= .5; f *= 2; }
+      return s;
+    };
+  }
+
+  function construirCampo() {
+    var ruido = ruidoValor(20191004);
+    for (var y = 0; y < GH; y++) {
+      for (var x = 0; x < GW; x++) {
+        var u = x / GW, v = y / GH;
+        /* Deformação do domínio: o plano é torcido antes de medir a distância
+           até o núcleo da ilha. É o que transforma círculo em costa. */
+        var wu = u + (ruido(u * 3.1 + 5.2, v * 3.1 + 1.3) - .5) * .26;
+        var wv = v + (ruido(u * 3.1 + 9.7, v * 3.1 + 4.1) - .5) * .26;
+        var h = 0;
+        for (var k = 0; k < ILHAS.length; k++) {
+          var I = ILHAS[k];
+          var dx = (wu - I.x) * 2.1, dy = wv - I.y;
+          var d = Math.sqrt(dx * dx + dy * dy) / I.r;
+          if (d < 1.8) h = Math.max(h, I.f * Math.exp(-d * d * 1.15));
+        }
+        var cristas = ruido(u * 6.5 + 2.4, v * 6.5 + 7.8);
+        h = h * (.48 + 1.02 * cristas) + h * .16 * ruido(u * 16, v * 16);
+        alturas[y * GW + x] = h;
+      }
+    }
+  }
+
+  function amostra(x, y) {
+    x = Math.max(0, Math.min(GW - 1, x)); y = Math.max(0, Math.min(GH - 1, y));
+    return alturas[y * GW + x];
+  }
+
+  /* Marching squares: por célula, liga os pontos médios interpolados. */
+  function contorno(ctx, nivel, W, H) {
+    var sx = W / (GW - 1), sy = H / (GH - 1);
+    function ip(v1, v2) { var t = (nivel - v1) / (v2 - v1 || 1e-6); return Math.max(0, Math.min(1, t)); }
+    ctx.beginPath();
+    for (var y = 0; y < GH - 1; y++) {
+      for (var x = 0; x < GW - 1; x++) {
+        var a = amostra(x, y), b = amostra(x + 1, y), c = amostra(x + 1, y + 1), d = amostra(x, y + 1);
+        var idx = (a > nivel ? 8 : 0) | (b > nivel ? 4 : 0) | (c > nivel ? 2 : 0) | (d > nivel ? 1 : 0);
+        if (idx === 0 || idx === 15) continue;
+        var T = { x: (x + ip(a, b)) * sx, y: y * sy };
+        var R = { x: (x + 1) * sx, y: (y + ip(b, c)) * sy };
+        var B = { x: (x + ip(d, c)) * sx, y: (y + 1) * sy };
+        var L = { x: x * sx, y: (y + ip(a, d)) * sy };
+        var seg = [];
+        switch (idx) {
+          case 1: case 14: seg = [[L, B]]; break;
+          case 2: case 13: seg = [[B, R]]; break;
+          case 3: case 12: seg = [[L, R]]; break;
+          case 4: case 11: seg = [[T, R]]; break;
+          case 6: case 9:  seg = [[T, B]]; break;
+          case 7: case 8:  seg = [[L, T]]; break;
+          case 5:          seg = [[L, T], [B, R]]; break;
+          case 10:         seg = [[T, R], [L, B]]; break;
+        }
+        for (var s = 0; s < seg.length; s++) {
+          ctx.moveTo(seg[s][0].x, seg[s][0].y);
+          ctx.lineTo(seg[s][1].x, seg[s][1].y);
+        }
+      }
+    }
+    ctx.stroke();
+  }
+
+  function carta() {
+    var cv = D.el("chart");
+    if (!cv) return;
+    if (animando) { cancelAnimationFrame(animando); animando = null; }
+
+    var ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+    construirCampo();
+
+    var contatos = [], r = D.prng(77021), n = 0, tent = 0;
+    while (n < 9 && tent < 4000) {
+      tent++;
+      var gx = Math.floor(r() * GW), gy = Math.floor(r() * GH);
+      if (amostra(gx, gy) < COSTA + .06) continue;
+      var px = gx / (GW - 1) * W, py = gy / (GH - 1) * H;
+      if (contatos.some(function (c) { return Math.hypot(c.x - px, c.y - py) < W * .075; })) continue;
+      contatos.push({ x: px, y: py, fase: r() * Math.PI * 2 });
+      n++;
+    }
+
+    var base = document.createElement("canvas");
+    base.width = W; base.height = H;
+
+    function pintarBase() {
+      var T = {
+        mar: D.token("--surface", "#0d1315"),
+        terra: D.token("--surface2", "#131c1f"),
+        linha: D.token("--accent", "#4ec8bb"),
+        fraco: D.token("--line", "#1e2d31"),
+        texto: D.token("--muted", "#7b8e8b")
+      };
+
+      ctx.fillStyle = T.mar; ctx.fillRect(0, 0, W, H);
+
+      /* Terra colorida por altitude — sem isso o mar e a terra ficam com o
+         mesmo valor e a carta vira um alvo de tiro em vez de arquipélago. */
+      var cBaixo = D.rgb(T.terra), cAlto = D.rgb(T.linha);
+      var off = document.createElement("canvas");
+      off.width = GW; off.height = GH;
+      var octx = off.getContext("2d"), img = octx.createImageData(GW, GH);
+      for (var i = 0; i < GW * GH; i++) {
+        var h = alturas[i];
+        if (h < COSTA) { img.data[i * 4 + 3] = 0; continue; }
+        var t = Math.min(1, (h - COSTA) / .55), m = .14 + .30 * t;
+        img.data[i * 4]     = Math.round(cBaixo[0] + (cAlto[0] - cBaixo[0]) * m);
+        img.data[i * 4 + 1] = Math.round(cBaixo[1] + (cAlto[1] - cBaixo[1]) * m);
+        img.data[i * 4 + 2] = Math.round(cBaixo[2] + (cAlto[2] - cBaixo[2]) * m);
+        img.data[i * 4 + 3] = Math.round(Math.min(1, (h - COSTA) / .035) * 255);
+      }
+      octx.putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(off, 0, 0, W, H);
+
+      ctx.strokeStyle = T.fraco; ctx.lineWidth = 1; ctx.globalAlpha = .55;
+      ctx.beginPath();
+      for (var gx2 = 0; gx2 <= W; gx2 += W / 16) { ctx.moveTo(gx2, 0); ctx.lineTo(gx2, H); }
+      for (var gy2 = 0; gy2 <= H; gy2 += H / 7) { ctx.moveTo(0, gy2); ctx.lineTo(W, gy2); }
+      ctx.stroke(); ctx.globalAlpha = 1;
+
+      var niveis = [COSTA, .38, .46, .54, .62, .70, .78, .86, .94];
+      for (var k = 0; k < niveis.length; k++) {
+        ctx.strokeStyle = T.linha;
+        ctx.globalAlpha = k === 0 ? .95 : .16 + k * .075;
+        ctx.lineWidth = k === 0 ? 1.8 : 1;
+        contorno(ctx, niveis[k], W, H);
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.setLineDash([5, 7]); ctx.strokeStyle = T.linha; ctx.lineWidth = 1;
+      ctx.globalAlpha = .22; contorno(ctx, COSTA - .055, W, H);
+      ctx.globalAlpha = .13; contorno(ctx, COSTA - .105, W, H);
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+      ctx.fillStyle = T.texto;
+      ctx.font = "500 11px ui-monospace, 'JetBrains Mono', monospace";
+      ctx.globalAlpha = .5;
+      for (var c = 0; c < 16; c++) ctx.fillText(String.fromCharCode(65 + c), c * (W / 16) + 6, 15);
+      for (var l = 0; l < 7; l++) ctx.fillText(String(l + 1).padStart(2, "0"), 6, l * (H / 7) + 26);
+      ctx.globalAlpha = 1;
+
+      var bx = W - 170, by = H - 58;
+      ctx.strokeStyle = T.texto; ctx.globalAlpha = .7; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(bx, by - 5); ctx.lineTo(bx, by); ctx.lineTo(bx + 120, by); ctx.lineTo(bx + 120, by - 5);
+      ctx.moveTo(bx + 60, by); ctx.lineTo(bx + 60, by - 4);
+      ctx.stroke();
+      ctx.fillStyle = T.texto;
+      ctx.fillText("0", bx - 2, by + 14); ctx.fillText("5 KM", bx + 104, by + 14);
+      ctx.globalAlpha = 1;
+
+      base.getContext("2d").clearRect(0, 0, W, H);
+      base.getContext("2d").drawImage(cv, 0, 0);
+    }
+
+    pintarBase();
+
+    var t0 = performance.now();
+    function quadro(now) {
+      if (!document.body.contains(cv)) { animando = null; return; }
+      var T = { linha: D.token("--accent", "#4ec8bb"), alerta: D.token("--ruim", "#c8483d") };
+      var t = (now - t0) / 1000;
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(base, 0, 0);
+
+      var vx = ((t * 0.085) % 1.35 - .18) * W;
+      var grad = ctx.createLinearGradient(vx - 150, 0, vx + 150, 0);
+      grad.addColorStop(0, "rgba(0,0,0,0)");
+      grad.addColorStop(.5, T.linha);
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.globalAlpha = .08; ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+
+      for (var i = 0; i < contatos.length; i++) {
+        var c = contatos[i], p = (Math.sin(t * 1.5 + c.fase) + 1) / 2;
+        ctx.strokeStyle = T.alerta; ctx.lineWidth = 1.4;
+        ctx.globalAlpha = .35 + p * .65;
+        ctx.beginPath();
+        ctx.moveTo(c.x - 6, c.y); ctx.lineTo(c.x + 6, c.y);
+        ctx.moveTo(c.x, c.y - 6); ctx.lineTo(c.x, c.y + 6);
+        ctx.stroke();
+        ctx.globalAlpha = .2 + p * .35;
+        ctx.beginPath(); ctx.arc(c.x, c.y, 5 + p * 9, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      if (!reduz) animando = requestAnimationFrame(quadro);
+    }
+    if (reduz) quadro(t0); else animando = requestAnimationFrame(quadro);
+
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      setTimeout(pintarBase, 60);
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     NAVEGAÇÃO
+     ═══════════════════════════════════════════ */
+
+  var TODOS = [INDICE].concat(D.volumes);
+  var atual = null;
+
+  D.el("nav").innerHTML = TODOS.map(function (v) {
+    return '<button type="button" class="arq" data-ir="' + v.id + '" aria-current="false">' +
+      '<span class="cod">' + v.cod + "</span>" +
+      '<span class="nm">' + v.nome + "</span></button>";
+  }).join("");
+
+  function indiceDe(id) {
+    for (var i = 0; i < TODOS.length; i++) if (TODOS[i].id === id) return i;
+    return -1;
+  }
+
+  function abrir(id, semHash) {
+    var i = indiceDe(id);
+    if (i < 0) return false;
+    var v = TODOS[i];
+    atual = v;
+
+    var h = '<div class="cabecalho-vol">' +
+      '<p class="caminho">~/dossie/auroa/<b>' + v.arquivo + "</b> &nbsp;·&nbsp; volume " + v.cod + " de 10</p>" +
+      "<h1>" + v.titulo + (v.subtitulo ? "<em>" + v.subtitulo + "</em>" : "") + "</h1>" +
+      (v.lede || []).map(function (p) { return "<p>" + p + "</p>"; }).join("") +
+      "</div>";
+
+    if (v.saltos && v.saltos.length) {
+      h += '<div class="saltos">' + v.saltos.map(function (s) {
+        return '<a href="#" data-salto="' + s[0] + '">' + s[1] + "</a>";
+      }).join("") + "</div>";
+    }
+
+    h += '<div class="conteudo">' + v.render() + "</div>";
+
+    var ant = TODOS[i - 1], prox = TODOS[i + 1];
+    h += '<div class="passo">' +
+      "<button type=\"button\" data-ir=\"" + (ant ? ant.id : "") + "\"" + (ant ? "" : " disabled") + ">← " +
+      (ant ? ant.cod + " · " + ant.nome : "início do dossiê") + "</button>" +
+      "<button type=\"button\" data-ir=\"" + (prox ? prox.id : "") + "\"" + (prox ? "" : " disabled") + ">" +
+      (prox ? prox.cod + " · " + prox.nome : "fim do dossiê") + " →</button>" +
+      "</div>";
+
+    D.el("dentro").innerHTML = h;
+    D.el("main").scrollTop = 0;
+
+    Array.prototype.forEach.call(D.el("nav").children, function (b) {
+      b.setAttribute("aria-current", String(b.getAttribute("data-ir") === id));
+    });
+
+    /* no celular o caminho inteiro empurra o campo de comando para fora:
+       lá vale só o volume */
+    D.el("prompt").textContent = window.innerWidth < 820
+      ? v.id + "$"
+      : "nomad@erewhon:~/dossie/" + v.id + "$";
+
+    /* o rádio sintoniza o assunto do volume aberto */
+    D.trafego.canal(v.id);
+
+    marcarRolaveis();
+
+    if (typeof v.depois === "function") {
+      try { v.depois(); } catch (e) { erro("falha ao montar instrumento do volume " + v.cod); }
+    }
+
+    if (!semHash) location.hash = id;
+    return true;
+  }
+
+  /* ═══════════════════════════════════════════
+     DIAGRAMAS LARGOS EM TELA ESTREITA
+
+     Seis instrumentos do dossiê são mais largos que um celular e já
+     rolavam de lado — só que nada dizia isso. Em vez de marcar um por
+     um, aqui a página se mede depois de montar: tudo que transborda
+     ganha a borda esfumada e uma legenda de arraste, que some sozinha
+     no primeiro toque. Assim vale também para o que eu não previ.
+     ═══════════════════════════════════════════ */
+
+  /* Uma passagem só não bastava: no primeiro quadro alguns instrumentos
+     ainda não têm largura medida, e as fontes chegam depois e mudam tudo
+     de novo. Então a varredura roda em três momentos e ao redimensionar,
+     e é idempotente — quem já foi marcado é pulado. */
+  function varrerLargura() {
+    var dentro = D.el("dentro");
+    var todos = dentro.querySelectorAll("div, section, figure");
+    for (var i = 0; i < todos.length; i++) {
+      var el = todos[i];
+      if (el.classList.contains("dica-rolar")) continue;
+      if (el.getAttribute("data-rola")) continue;
+      var sobra = el.scrollWidth - el.clientWidth;
+      if (sobra < 12 || el.clientWidth < 40) continue;
+      if (getComputedStyle(el).overflowX === "visible") continue;
+
+      el.setAttribute("data-rola", "sim");
+      var dica = document.createElement("p");
+      dica.className = "dica-rolar";
+      dica.textContent = "◂ arraste para ver o diagrama inteiro ▸";
+      el.insertAdjacentElement("afterend", dica);
+
+      (function (alvo, aviso) {
+        alvo.addEventListener("scroll", function some() {
+          alvo.removeEventListener("scroll", some);
+          aviso.classList.add("usada");
+        }, { passive: true });
+      })(el, dica);
+    }
+  }
+
+  function marcarRolaveis() {
+    var antigas = D.el("dentro").querySelectorAll(".dica-rolar");
+    for (var k = 0; k < antigas.length; k++) antigas[k].remove();
+    requestAnimationFrame(varrerLargura);
+    setTimeout(varrerLargura, 150);
+    setTimeout(varrerLargura, 700);
+  }
+
+  var relogioLargura = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(relogioLargura);
+    relogioLargura = setTimeout(function () {
+      /* ao alargar, o que cabia de novo perde a marca */
+      var marcados = D.el("dentro").querySelectorAll("[data-rola]");
+      for (var i = 0; i < marcados.length; i++) {
+        if (marcados[i].scrollWidth - marcados[i].clientWidth < 12) {
+          marcados[i].removeAttribute("data-rola");
+          var prox = marcados[i].nextElementSibling;
+          if (prox && prox.classList.contains("dica-rolar")) prox.remove();
+        }
+      }
+      varrerLargura();
+    }, 250);
+  });
+
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ir]");
+    if (b && b.getAttribute("data-ir")) { e.preventDefault(); abrir(b.getAttribute("data-ir")); return; }
+    var s = e.target.closest("[data-salto]");
+    if (s) {
+      e.preventDefault();
+      var alvo = document.getElementById(s.getAttribute("data-salto"));
+      if (alvo) alvo.scrollIntoView({ behavior: reduz ? "auto" : "smooth", block: "start" });
+    }
+  });
+
+  window.addEventListener("hashchange", function () {
+    var id = location.hash.replace("#", "");
+    if (id && atual && id !== atual.id) abrir(id, true);
+  });
+
+  /* ═══════════════════════════════════════════
+     LINHA DE COMANDO
+     ═══════════════════════════════════════════ */
+
+  var historico = [], hpos = -1;
+
+  function escreve(txt, classe) {
+    var el = D.el("saida");
+    var linha = document.createElement("div");
+    if (classe) linha.className = classe;
+    linha.innerHTML = txt;
+    el.appendChild(linha);
+    while (el.children.length > 3) el.removeChild(el.firstChild);
+  }
+  function erro(txt) {
+    escreve("<span class='erro'>" + txt + "</span>");
+    D.som.tocar("erro");
+  }
+
+  /* ——— chaves de som e de mira ——— */
+
+  function rotuloSom() {
+    var b = D.el("som-btn"), f = D.el("bt-som"), a = D.el("bt-amb");
+    var lig = D.som.ligado(), livre = D.som.liberado();
+    if (b) {
+      b.setAttribute("data-on", lig ? "sim" : "nao");
+      b.textContent = !lig  ? "⊘ som desligado · ativar"
+                    : livre ? "♦ som ligado · desligar"
+                            : "♦ som ligado · clique para liberar";
+    }
+    if (f) f.setAttribute("aria-pressed", String(lig));
+    if (a) {
+      a.setAttribute("aria-pressed", String(D.som.ambiente() && lig));
+      a.disabled = !lig;
+    }
+  }
+
+  D.som.aoMudar(rotuloSom);
+  rotuloSom();
+
+  /* Com a preferência já em "ligado" e o áudio ainda travado pelo
+     navegador, o clique é para LIBERAR, não para desligar — é o que o
+     rótulo promete nesse estado. */
+  function chaveSom() {
+    if (D.som.ligado() && !D.som.liberado()) D.som.alterna(true);
+    else D.som.alterna();
+    rotuloSom();
+  }
+
+  /* o botão da tela de inicialização precisa engolir o clique: qualquer
+     outro ponto da tela pula o enlace, e ligar o som não é pular */
+  D.el("som-btn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    chaveSom();
+  });
+
+  D.el("bt-som").addEventListener("click", chaveSom);
+
+  D.el("bt-amb").addEventListener("click", function () {
+    D.som.alternaAmbiente();
+    rotuloSom();
+  });
+
+  var btMira = D.el("bt-mira");
+  if (!D.mira.disponivel()) btMira.hidden = true;
+  btMira.setAttribute("aria-pressed", String(D.mira.ligado()));
+  btMira.addEventListener("click", function () {
+    btMira.setAttribute("aria-pressed", String(D.mira.alterna()));
+  });
+
+  var AJUDA =
+    "<b>buscar TERMO</b> procura no dossiê inteiro &nbsp;·&nbsp; " +
+    "<b>ls</b> lista os volumes &nbsp;·&nbsp; <b>abrir N</b> abre o volume &nbsp;·&nbsp; " +
+    "<b>N</b> atalho &nbsp;·&nbsp; <b>indice</b> volta ao começo &nbsp;·&nbsp; " +
+    "<b>proximo</b> / <b>anterior</b> &nbsp;·&nbsp; <b>perfil</b> &nbsp;·&nbsp; " +
+    "<b>radio</b> liga/desliga o tráfego &nbsp;·&nbsp; <b>canal</b> &nbsp;·&nbsp; " +
+    "<b>som</b> &nbsp;·&nbsp; <b>zumbido</b> &nbsp;·&nbsp; <b>mira</b> &nbsp;·&nbsp; " +
+    "<b>silencio</b> escapa da varredura &nbsp;·&nbsp; <b>azrael</b> liga/desliga o risco &nbsp;·&nbsp; " +
+    "<b>reconectar</b> refaz o enlace &nbsp;·&nbsp; <b>limpar</b>";
+
+  function executar(bruto) {
+    var linha = bruto.trim();
+    if (!linha) return;
+    escreve("<b>$</b> " + linha.replace(/</g, "&lt;"));
+    historico.push(linha); hpos = historico.length;
+
+    var partes = linha.toLowerCase().split(/\s+/);
+    var cmd = partes[0], arg = partes.slice(1).join(" ");
+
+    /* número solto é atalho para abrir o volume */
+    if (/^\d{1,2}$/.test(cmd)) { arg = cmd; cmd = "abrir"; }
+
+    switch (cmd) {
+      case "ajuda": case "help": case "?":
+        escreve(AJUDA); return;
+
+      case "ls": case "dir":
+        escreve(TODOS.map(function (v) {
+          return "<b>" + v.cod + "</b> " + v.arquivo;
+        }).join(" &nbsp; ")); return;
+
+      case "indice": case "home": case "cd":
+        if (cmd === "cd" && arg) break;
+        abrir("v00"); escreve("índice carregado."); return;
+
+      case "perfil":
+        escreve("imersivo · solo · sem esquadra &nbsp;·&nbsp; nível de equipamento <b>desligado</b> &nbsp;·&nbsp; " +
+          "marcador de inimigo <b>desligado</b> &nbsp;·&nbsp; spoiler de trama <b>nenhum</b>"); return;
+
+      case "quem": case "whoami":
+        escreve("nomad · ghost · operação greenstone · arquipélago de auroa"); return;
+
+      case "limpar": case "clear":
+        D.el("saida").innerHTML = ""; return;
+
+      case "boot": case "reconectar":
+        rodarBoot(); return;
+
+      case "radio": case "rádio": case "trafego": case "tráfego": {
+        var alvoR = /^(on|ligar|abrir)$/.test(arg) ? true
+                  : /^(off|desligar|silencio|silêncio|fechar)$/.test(arg) ? false
+                  : undefined;
+        var st = D.trafego.alterna(alvoR);
+        escreve(st
+          ? "canal aberto. tráfego de rádio <b>ligado</b> — " + D.trafego.recebidas() + " transmissões nesta sessão."
+          : "silêncio de rádio. tráfego <b>desligado</b> até você mandar <b>radio on</b>.");
+        return;
+      }
+
+      case "som": case "audio": case "áudio": {
+        var aS = /^(on|ligar)$/.test(arg) ? true
+               : /^(off|desligar|mudo)$/.test(arg) ? false : undefined;
+        var sLig = D.som.alterna(aS);
+        rotuloSom();
+        escreve(sLig
+          ? "áudio <b>ligado</b> — squelch no rádio, estalo nas teclas, varredura do Azraël."
+          : "áudio <b>desligado</b>.");
+        return;
+      }
+
+      case "buscar": case "busca": case "procurar": case "grep": case "find":
+        if (!arg) { erro("uso: <b>buscar</b> seguido do que procurar. ex.: <b>buscar seringa</b>"); return; }
+        /* o termo cru preserva acento e caixa para exibir; a comparação ignora */
+        buscar(linha.slice(linha.indexOf(" ") + 1).trim());
+        return;
+
+      case "silencio": case "silêncio": case "cortar":
+        if (escaparAzrael()) return;
+        escreve("nenhuma emissão sendo rastreada agora.");
+        return;
+
+      case "azrael": case "azraël": case "intercepcao": case "interceptação": {
+        /* quem quiser ver o evento sem esperar pelo sorteio */
+        if (/^(agora|já|ja|simular)$/.test(arg)) {
+          if (emAviso || !D.el("queda").hidden) { erro("já existe uma varredura em curso."); return; }
+          azrLigado = true; avisarAzrael();
+          escreve("varredura forçada. <b>silencio</b> escapa.");
+          return;
+        }
+        var aZ = /^(on|ligar)$/.test(arg) ? true
+               : /^(off|desligar)$/.test(arg) ? false : undefined;
+        azrLigado = typeof aZ === "boolean" ? aZ : !azrLigado;
+        try { localStorage.setItem("crosscom.azrael", azrLigado ? "on" : "off"); } catch (e) { /* segue */ }
+        if (azrLigado) { agendarAzrael(300, 540); escreve("varredura hostil <b>ativa</b> — o enlace pode cair. <b>silencio</b> escapa do aviso."); }
+        else { clearTimeout(azrTimer); clearTimeout(contaTimer); escreve("varredura hostil <b>desativada</b>. o enlace não cai mais sozinho."); }
+        return;
+      }
+
+      case "ambiente": case "zumbido": case "leito": {
+        var aA = /^(on|ligar)$/.test(arg) ? true
+               : /^(off|desligar|mudo)$/.test(arg) ? false : undefined;
+        if (!D.som.ligado()) D.som.alterna(true);
+        var aLig = D.som.alternaAmbiente(aA);
+        rotuloSom();
+        escreve(aLig
+          ? "leito do terminal <b>ligado</b> — rede elétrica em 50 Hz, ronco de transformador e ar."
+          : "leito do terminal <b>desligado</b> — só os avisos.");
+        return;
+      }
+
+      case "mira": case "cursor": case "reticulo": case "retículo": {
+        if (!D.mira.disponivel()) {
+          escreve("a mira depende de mouse — neste aparelho não há ponteiro fino.");
+          return;
+        }
+        var aM = /^(on|ligar)$/.test(arg) ? true
+               : /^(off|desligar)$/.test(arg) ? false : undefined;
+        var mLig = D.mira.alterna(aM);
+        D.el("bt-mira").setAttribute("aria-pressed", String(mLig));
+        escreve(mLig
+          ? "retículo <b>ligado</b>."
+          : "retículo <b>desligado</b> — ponteiro do sistema de volta.");
+        return;
+      }
+
+      case "canal":
+        escreve("escuta sintonizada em <b>" + D.trafego.canalAtual() + "</b> &nbsp;·&nbsp; " +
+          "o canal segue o volume aberto &nbsp;·&nbsp; " + D.trafego.recebidas() + " transmissões recebidas");
+        return;
+
+      case "proximo": case "next": {
+        var i = indiceDe(atual.id);
+        if (i < TODOS.length - 1) abrir(TODOS[i + 1].id); else erro("já está no último volume.");
+        return;
+      }
+      case "anterior": case "prev": {
+        var j = indiceDe(atual.id);
+        if (j > 0) abrir(TODOS[j - 1].id); else erro("já está no índice.");
+        return;
+      }
+    }
+
+    /* abrir por número, por identificador ou por nome */
+    var alvo = arg || cmd;
+    if (cmd === "abrir" || cmd === "open" || cmd === "cd" || cmd === "cat") alvo = arg;
+
+    if (alvo) {
+      var num = alvo.replace(/^v/, "");
+      if (/^\d{1,2}$/.test(num)) {
+        var id = "v" + String(parseInt(num, 10)).padStart(2, "0");
+        if (abrir(id)) { escreve("volume " + id.slice(1) + " carregado."); return; }
+      }
+      var achou = TODOS.filter(function (v) {
+        return v.nome.toLowerCase().indexOf(alvo) >= 0 || v.arquivo.indexOf(alvo) >= 0;
+      })[0];
+      if (achou) { abrir(achou.id); escreve("volume " + achou.cod + " carregado."); return; }
+    }
+
+    erro("comando não reconhecido: " + cmd.replace(/</g, "&lt;") + " — digite <b>ajuda</b>.");
+  }
+
+  D.el("form-cmd").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var campo = D.el("cmd");
+    if (campo.value.trim()) D.som.tocar("enter");
+    executar(campo.value);
+    campo.value = "";
+  });
+
+  D.el("cmd").addEventListener("keydown", function (e) {
+    /* estalo só no que muda o texto — setas e modificadores ficam mudas */
+    if (e.key.length === 1 || e.key === "Backspace" || e.key === "Delete") {
+      D.som.tocar("tecla");
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (hpos > 0) { hpos--; this.value = historico[hpos]; }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (hpos < historico.length - 1) { hpos++; this.value = historico[hpos]; }
+      else { hpos = historico.length; this.value = ""; }
+    } else if (e.key === "Escape") {
+      if (!D.el("busca").hidden) { fecharBusca(); return; }
+      this.blur();
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var dentroDeCampo = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+    if (e.key === "/" && !dentroDeCampo) { e.preventDefault(); D.el("cmd").focus(); }
+  });
+
+  /* ═══════════════════════════════════════════
+     BUSCA
+
+     Onze volumes e muito texto: no meio de uma partida, o que você quer
+     é o parágrafo, não o volume. O índice é montado uma vez, na primeira
+     busca, renderizando cada volume num elemento solto — render() só
+     devolve marcação, quem mexe no documento é depois(), então dá para
+     ler o texto inteiro sem montar nada na tela.
+
+     A comparação ignora acento e caixa, porque ninguém digita "bivaque"
+     com o mesmo cuidado que escreveu.
+     ═══════════════════════════════════════════ */
+
+  var indiceBusca = null;
+
+  function semAcento(s) {
+    return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  }
+
+  function montarIndice() {
+    if (indiceBusca) return indiceBusca;
+    indiceBusca = [];
+    var caixa = document.createElement("div");
+    for (var i = 0; i < TODOS.length; i++) {
+      var v = TODOS[i], html;
+      try { html = v.render(); } catch (e) { continue; }
+      /* textContent gruda o fim de um bloco no começo do seguinte e o
+         trecho sai como "sozinho.O drone é a arma". Um espaço antes de
+         cada fechamento de bloco resolve sem tocar na estrutura. */
+      html = html.replace(/<\/(p|li|h1|h2|h3|h4|h5|div|td|th|small|figcaption|cite|dt|dd)>/gi, " </$1>");
+      caixa.innerHTML = html;
+      /* rótulos de diagrama não são texto de leitura: viram ruído na busca */
+      var svgs = caixa.querySelectorAll("svg, canvas");
+      for (var k = 0; k < svgs.length; k++) svgs[k].remove();
+      var secoes = caixa.querySelectorAll("section[id]");
+      for (var s = 0; s < secoes.length; s++) {
+        var sec = secoes[s];
+        var h2 = sec.querySelector("h2");
+        var texto = (sec.textContent || "").replace(/\s+/g, " ").trim();
+        if (!texto) continue;
+        indiceBusca.push({
+          vol: v, secId: sec.id,
+          titulo: h2 ? h2.textContent.trim() : sec.id,
+          texto: texto, chave: semAcento(texto)
+        });
+      }
+      /* o cabeçalho do volume não está dentro de nenhuma section */
+      var lede = (v.lede || []).join(" ") + " " + v.titulo + " " + (v.subtitulo || "") + " " + v.desc;
+      indiceBusca.push({
+        vol: v, secId: null, titulo: "abertura",
+        texto: lede.replace(/\s+/g, " ").trim(), chave: semAcento(lede)
+      });
+    }
+    caixa.innerHTML = "";
+    return indiceBusca;
+  }
+
+  function buscar(termo) {
+    var alvo = semAcento(termo.trim());
+    if (alvo.length < 2) { erro("busque por pelo menos duas letras."); return; }
+
+    var achados = [];
+    var idx = montarIndice();
+    for (var i = 0; i < idx.length && achados.length < 40; i++) {
+      var p = idx[i].chave.indexOf(alvo);
+      if (p < 0) continue;
+      achados.push({ reg: idx[i], pos: p });
+    }
+
+    var caixa = D.el("busca");
+    if (!achados.length) {
+      caixa.hidden = false;
+      caixa.innerHTML = '<p class="nada">nada no dossiê para <b>' +
+        termo.replace(/</g, "&lt;") + "</b>.</p>";
+      D.som.tocar("erro");
+      return;
+    }
+
+    /* um resultado por volume, o mais relevante, para não encher de repetição */
+    var porVol = {}, ordem = [];
+    achados.forEach(function (a) {
+      var k = a.reg.vol.id;
+      if (!porVol[k]) { porVol[k] = a; ordem.push(k); }
+    });
+
+    caixa.hidden = false;
+    caixa.innerHTML =
+      '<p class="cab"><b>' + achados.length + "</b> ocorrência" + (achados.length > 1 ? "s" : "") +
+      " em <b>" + ordem.length + "</b> volume" + (ordem.length > 1 ? "s" : "") +
+      ' &nbsp;·&nbsp; <button type="button" class="fechar" id="busca-x">fechar</button></p>' +
+      ordem.slice(0, 7).map(function (k) {
+        var a = porVol[k], r = a.reg;
+        var ini = Math.max(0, a.pos - 58);
+        var trecho = r.texto.slice(ini, a.pos + termo.length + 78);
+        var bruto = r.texto.slice(a.pos, a.pos + termo.length);
+        trecho = (ini > 0 ? "…" : "") +
+          trecho.replace(/</g, "&lt;").replace(bruto.replace(/</g, "&lt;"), "<mark>" + bruto.replace(/</g, "&lt;") + "</mark>") + "…";
+        return '<button type="button" class="hit" data-vol="' + r.vol.id +
+          '" data-sec="' + (r.secId || "") + '">' +
+          '<span class="onde">' + r.vol.cod + " · " + r.vol.nome +
+          (r.secId ? " → " + r.titulo : "") + "</span>" +
+          '<span class="trecho">' + trecho + "</span></button>";
+      }).join("");
+    D.som.tocar("dados");
+  }
+
+  function fecharBusca() {
+    var c = D.el("busca");
+    c.hidden = true; c.innerHTML = "";
+  }
+
+  D.el("busca").addEventListener("click", function (e) {
+    if (e.target.closest("#busca-x")) { fecharBusca(); return; }
+    var h = e.target.closest(".hit");
+    if (!h) return;
+    var vol = h.getAttribute("data-vol"), sec = h.getAttribute("data-sec");
+    abrir(vol);
+    fecharBusca();
+    if (sec) {
+      setTimeout(function () {
+        var el = document.getElementById(sec);
+        if (el) el.scrollIntoView({ behavior: reduz ? "auto" : "smooth", block: "start" });
+      }, 90);
+    }
+    D.som.tocar("certo");
+  });
+
+  /* ═══════════════════════════════════════════
+     O AZRAËL CORTA O ENLACE
+
+     De vez em quando a varredura acha a sua portadora e derruba o
+     canal. Duas decisões tornam isso jogável em vez de irritante:
+
+     · TEM AVISO. Dez segundos antes o cabeçalho acende e o tráfego
+       manda o alerta. Quem digitar `silencio` nessa janela escapa — o
+       evento é evitável, não uma punição sorteada.
+
+     · NÃO REINICIA NADA. O dossiê continua montado atrás do painel.
+       Cada saída devolve o leitor ao mesmo volume e à mesma altura de
+       rolagem, com uma sequência curta de três a cinco segundos. E cada
+       uma tem um preço diferente no relógio da próxima varredura.
+     ═══════════════════════════════════════════ */
+
+  var azrLigado = true;
+  try { azrLigado = localStorage.getItem("crosscom.azrael") !== "off"; } catch (e) { /* padrão ligado */ }
+
+  var azrTimer = null, contaTimer = null, emAviso = false, guardado = null;
+  var modoInvasao = false;
+
+  function agendarAzrael(minS, maxS) {
+    clearTimeout(azrTimer);
+    if (!azrLigado) return;
+    var min = (minS || 300) * 1000, max = (maxS || 540) * 1000;
+    azrTimer = setTimeout(function () {
+      /* nunca em cima do boot, de outro evento ou de aba escondida */
+      if (bootAtivo || emAviso || !D.el("queda").hidden || document.hidden) {
+        agendarAzrael(90, 180); return;
+      }
+      avisarAzrael();
+    }, min + Math.random() * (max - min));
+  }
+
+  function avisarAzrael() {
+    emAviso = true;
+    var chip = D.el("chip-azrael");
+    document.documentElement.classList.add("sob-varredura");
+    D.som.tocar("alarme");
+    D.trafego.avisar("<b class='r'>AZRAËL travou a sua portadora.</b> corte a emissão — digite <b>silencio</b>.", true);
+
+    var resta = 10;
+    (function bate() {
+      chip.hidden = false;
+      chip.textContent = "▲ EMISSÃO LOCALIZADA · " + resta + "s";
+      if (resta <= 0) { cortarEnlace(); return; }
+      resta--;
+      if (resta % 3 === 0) D.som.tocar("tique");
+      contaTimer = setTimeout(bate, 1000);
+    })();
+  }
+
+  function escaparAzrael() {
+    if (!emAviso) return false;
+    emAviso = false;
+    clearTimeout(contaTimer);
+    D.el("chip-azrael").hidden = true;
+    document.documentElement.classList.remove("sob-varredura");
+    D.som.tocar("certo");
+    escreve("emissão cortada a tempo. o azraël passou sem marcar a sua posição.");
+    agendarAzrael(480, 900);
+    return true;
+  }
+
+  /* ——— as saídas, cada uma com o seu preço ——— */
+
+  var SAIDAS = [
+    { id: "rele", rotulo: "Reconectar pelo relé civil",
+      nota: "seguro e lento · latência alta",
+      passos: [
+        ["procurando relé civil auroa-met-07", 900, "<span class='ok'>encontrado</span>"],
+        ["negociando cifra degradada", 800, "<span class='aviso'>fraca</span>"],
+        ["restaurando sessão do dossiê", 1000, "<span class='ok'>ok</span>"]
+      ],
+      depois: function () {
+        escreve("de volta pelo relé civil. latência alta, mas ninguém está olhando.");
+        agendarAzrael(420, 840);
+      } },
+
+    { id: "invasao", rotulo: "Ativar modo de invasão",
+      nota: "rápido · o terminal volta correndo quente",
+      passos: [
+        ["desligando portadora própria", 600, "<span class='ok'>muda</span>"],
+        ["parasitando enlace de manutenção", 1100, "<span class='aviso'>ativo</span>"],
+        ["mascarando assinatura", 800, "<span class='ok'>ok</span>"]
+      ],
+      depois: function () {
+        entrarInvasao();
+        escreve("<b>modo de invasão ativo.</b> você está usando o enlace deles. não demore.");
+        agendarAzrael(240, 420);
+      } },
+
+    { id: "lobos", rotulo: "Invadir a rede dos Lobos",
+      nota: "arriscado · escuta hostil direta",
+      passos: [
+        ["forçando entrada no canal 3", 1200, "<span class='falha'>recusado</span>"],
+        ["repetindo com credencial capturada", 1300, "<span class='ok'>dentro</span>"],
+        ["silenciando eco de autenticação", 900, "<span class='aviso'>parcial</span>"]
+      ],
+      depois: function () {
+        entrarInvasao();
+        D.trafego.forcarCanal("lobos", 240000);
+        escreve("você está dentro da rede deles. tudo que chegar agora é tráfego dos Lobos — e eles vão notar.");
+        agendarAzrael(150, 300);
+      } },
+
+    { id: "esperar", rotulo: "Aguardar o Azraël passar",
+      nota: "lento · zera o risco",
+      passos: [
+        ["silêncio de emissão", 1600, "<span class='ok'>mantido</span>"],
+        ["acompanhando a varredura", 2200, "<span class='aviso'>afastando</span>"],
+        ["religando portadora própria", 1100, "<span class='ok'>limpa</span>"]
+      ],
+      depois: function () {
+        escreve("ele passou. portadora própria de volta, sem marcação na sua posição.");
+        agendarAzrael(900, 1500);
+      } }
+  ];
+
+  function entrarInvasao() {
+    modoInvasao = true;
+    document.documentElement.classList.add("invasao");
+    D.el("chip-invasao").hidden = false;
+  }
+  function sairInvasao() {
+    modoInvasao = false;
+    document.documentElement.classList.remove("invasao");
+    D.el("chip-invasao").hidden = true;
+  }
+
+  function cortarEnlace() {
+    emAviso = false;
+    clearTimeout(contaTimer);
+    D.el("chip-azrael").hidden = true;
+    document.documentElement.classList.remove("sob-varredura");
+
+    /* guarda onde o leitor estava — é isso que evita "voltar do começo" */
+    guardado = { id: atual ? atual.id : "v00", alto: D.el("main").scrollTop };
+
+    D.som.tocar("tranco");
+    D.som.tocar("estatica");
+    D.trafego.parar();
+    sairInvasao();
+
+    var q = D.el("queda");
+    q.hidden = false;
+    q.classList.add("tremendo");
+    setTimeout(function () { q.classList.remove("tremendo"); }, 900);
+
+    D.el("q-log").innerHTML =
+      "<p>varredura azraël · <b>marcação confirmada</b></p>" +
+      "<p>enlace cortado na origem · portadora queimada</p>" +
+      "<p class='sub'>o dossiê continua montado. só o caminho de volta mudou.</p>";
+    D.el("q-instru").hidden = false;
+
+    D.el("q-opcoes").innerHTML = SAIDAS.map(function (s) {
+      return '<button type="button" class="q-op" data-saida="' + s.id + '">' +
+        "<b>" + s.rotulo + "</b><small>" + s.nota + "</small></button>";
+    }).join("");
+
+    /* o painel cobre a tela inteira: quem navega por teclado precisa ser
+       levado até ele, senão o foco fica preso atrás, num dossiê invisível */
+    var primeiro = D.el("q-opcoes").querySelector("button");
+    if (primeiro) primeiro.focus();
+  }
+
+  /* enquanto o painel está aberto, o Tab circula dentro dele */
+  D.el("queda").addEventListener("keydown", function (e) {
+    if (e.key !== "Tab") return;
+    var alvos = D.el("queda").querySelectorAll("button");
+    if (!alvos.length) return;
+    var primeiro = alvos[0], ultimo = alvos[alvos.length - 1];
+    if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+  });
+
+  D.el("q-opcoes").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-saida]");
+    if (!b) return;
+    var saida = SAIDAS.filter(function (s) { return s.id === b.getAttribute("data-saida"); })[0];
+    if (saida) rodarSaida(saida);
+  });
+
+  function rodarSaida(saida) {
+    D.el("q-opcoes").innerHTML = "";
+    D.el("q-instru").hidden = true;
+    var log = D.el("q-log");
+    log.innerHTML = "";
+    D.som.tocar("rele");
+
+    var i = 0;
+    (function passo() {
+      if (i >= saida.passos.length) {
+        setTimeout(function () { voltarAoDossie(saida); }, 420);
+        return;
+      }
+      var p = saida.passos[i++];
+      var linha = document.createElement("p");
+      linha.className = "q-passo";
+      linha.innerHTML = "<span>" + p[0] + "</span><i></i><span class='res'>" +
+        "<span class='gira'>|</span></span>";
+      log.appendChild(linha);
+
+      var gira = linha.querySelector(".gira"), giros = ["|", "/", "-", "\\"], k = 0;
+      var rot = setInterval(function () { gira.textContent = giros[++k % 4]; }, 110);
+
+      setTimeout(function () {
+        clearInterval(rot);
+        linha.querySelector(".res").innerHTML = p[2];
+        D.som.tocar(/FALHA|recusado/.test(p[2]) ? "falha" : "certo");
+        passo();
+      }, p[1]);
+    })();
+  }
+
+  function voltarAoDossie(saida) {
+    D.el("queda").hidden = true;
+    D.trafego.iniciar();
+    if (guardado) {
+      abrir(guardado.id, true);
+      /* a altura precisa ser reposta depois que o volume desenhou */
+      var alto = guardado.alto;
+      requestAnimationFrame(function () { D.el("main").scrollTop = alto; });
+      setTimeout(function () { D.el("main").scrollTop = alto; }, 200);
+      guardado = null;
+    }
+    D.som.tocar("squelch");
+    if (typeof saida.depois === "function") saida.depois();
+    if (matchMedia("(hover: hover)").matches) D.el("cmd").focus();
+  }
+
+  /* ═══════════════════════════════════════════
+     INICIALIZAÇÃO
+     ═══════════════════════════════════════════ */
+
+  /* ——— o roteiro da inicialização ———
+     Cada passo é um tipo de animação. A conexão de Auroa é ruim de
+     propósito: o enlace primário cai, a Sentinel varre o espectro e o
+     terminal contorna por relés civis antes de montar o dossiê. */
+
+  /* uma linha livre, e uma linha de rótulo com pontilhado até o resultado */
+  function bl(html, cls) {
+    return '<div class="bl livre' + (cls ? " " + cls : "") + '">' + html + "</div>";
+  }
+  function blRot(rotulo, res) {
+    return '<div class="bl"><span>' + rotulo + '</span><i class="pt"></i><span>' + res + "</span></div>";
+  }
+
+  var ROTEIRO = [
+    { t: "linha", txt: "<span class='titulo'>CROSS-COM · INTERFACE TÁTICA DE CAMPO</span>", d: 220 },
+    { t: "linha", txt: "<span class='sub'>build 4.11.2 · implantação auroa</span>", d: 170 },
+    { t: "linha", txt: "<span class='sub'>────────────────────────────────────</span>", d: 300 },
+
+    { t: "status", rot: "alimentação", dur: 340, res: "<span class='ok'>ok</span>" },
+    { t: "status", rot: "módulo criptográfico", dur: 420, res: "<span class='ok'>ok</span>" },
+    { t: "status", rot: "antena de campo", dur: 380, res: "<span class='ok'>ok</span>" },
+    { t: "pausa", dur: 240 },
+
+    { t: "linha", txt: "procurando satélite skell", d: 190 },
+    { t: "barra", dur: 1400, fim: "<span class='aviso'>1 de 4 visível</span>" },
+    { t: "sinal", dur: 900 },
+    { t: "pausa", dur: 280 },
+
+    { t: "status", rot: "enlace primário", dur: 1000, res: "<span class='falha'>FALHA</span>" },
+    { t: "linha", txt: "  <span class='sub'>› canal ocupado por tráfego sentinel</span>", d: 340 },
+    { t: "status", rot: "tentativa 2 de 3", dur: 1000, res: "<span class='falha'>FALHA</span>" },
+    { t: "linha", txt: "  <span class='sub'>› pacotes descartados: 87%</span>", d: 380 },
+
+    { t: "tranco" },
+    { t: "linha", txt: "", d: 100 },
+    { t: "linha", txt: "<span class='falha pisca'>!! CONEXÃO INTERROMPIDA !!</span>", d: 520 },
+    { t: "linha", txt: "<span class='aviso'>varredura de espectro detectada — não transmita</span>", d: 620 },
+    { t: "linha", txt: "", d: 160 },
+
+    { t: "linha", txt: "aguardando janela de silêncio", d: 190 },
+    { t: "barra", dur: 1500, fim: "<span class='ok'>janela aberta</span>" },
+    { t: "pausa", dur: 240 },
+
+    { t: "linha", txt: "<span class='aviso'>tentando bypass por relé civil…</span>", d: 480 },
+    { t: "status", rot: "  › auroa-met-07", dur: 540, res: "<span class='ok'>ok</span>" },
+    { t: "status", rot: "  › torre de radar 2b", dur: 620, res: "<span class='ok'>ok</span>" },
+    { t: "status", rot: "  › boia oceanográfica", dur: 700, res: "<span class='ok'>ok</span>" },
+    { t: "pausa", dur: 220 },
+    { t: "status", rot: "bypass estabelecido", dur: 560, res: "<span class='ok'>ok</span>" },
+    { t: "linha", txt: "  <span class='sub'>latência 840 ms · perda 12% · cifra degradada</span>", d: 540 },
+    { t: "linha", txt: "", d: 160 },
+
+    { t: "ruido", rot: "autenticando operador", dur: 950, res: "<span class='ok'>NOMAD</span>" },
+    { t: "status", rot: "  › biometria", dur: 480, res: "<span class='ok'>confere</span>" },
+    { t: "status", rot: "  › contra-senha", dur: 540, res: "<span class='ok'>confere</span>" },
+    { t: "pausa", dur: 240 },
+
+    { t: "linha", txt: "montando dossiê auroa", d: 190 },
+    { t: "barra", dur: 1150, fim: "<span class='ok'>11 arquivos</span>" },
+    { t: "status", rot: "canal de tráfego", dur: 620, res: "<span class='ok'>aberto</span>" },
+    { t: "linha", txt: "  <span class='sub'>6 equipes no ar · escuta hostil ativa</span>", d: 420 },
+    { t: "linha", txt: "", d: 190 },
+
+    { t: "linha", txt: "<span class='sub'>perfil: imersivo · solo · sem esquadra</span>", d: 250 },
+    { t: "linha", txt: "<span class='sub'>nível de equipamento: desligado</span>", d: 250 },
+    { t: "linha", txt: "<span class='sub'>último acesso: há 3 dias · sem comprometimento</span>", d: 420 },
+    { t: "linha", txt: "<span class='sub'>────────────────────────────────────</span>", d: 220 },
+    { t: "linha", txt: "<span class='aviso'>enlace instável. mantenha as transmissões curtas.</span>", d: 560 },
+    { t: "linha", txt: "<span class='titulo'>bem-vindo de volta, nomad.</span>", d: 620 }
+  ];
+
+  var GIRA = ["|", "/", "-", "\\"];
+  var LIXO = "▓▒░#@%&$*+=~^<>/\\|][}{";
+  var BARRAS = "▁▂▃▄▅▆▇";
+
+  var bootAtivo = false;
+
+  function rodarBoot() {
+    var el = D.el("boot"), alvo = D.el("boot-linhas"), pular = D.el("boot-pular");
+    var term = D.el("term");
+    var fixas = [], viva = "", passo = 0, timer = null, quadro = null, encerrado = false;
+
+    bootAtivo = true;
+    el.hidden = false;
+    el.classList.remove("tranco");
+    term.setAttribute("data-pronto", "nao");
+    /* durante o enlace não há canal: limpa o que estiver na tela */
+    D.trafego.parar();
+
+    function pinta() {
+      alvo.innerHTML = fixas.join("") + viva +
+        (viva === "" ? bl('<span class="cursor"></span>') : "");
+      /* mantém a última linha à vista quando o log fica mais alto que a tela */
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function entra() {
+      if (encerrado) return;
+      encerrado = true;
+      bootAtivo = false;
+      clearTimeout(timer);
+      if (quadro) cancelAnimationFrame(quadro);
+      document.removeEventListener("keydown", pularTudo);
+      el.removeEventListener("click", pularTudo);
+      el.hidden = true;
+      el.classList.remove("tranco");
+      term.setAttribute("data-pronto", "sim");
+
+      if (!atual) {
+        var inicial = location.hash.replace("#", "");
+        if (indiceDe(inicial) < 0) inicial = "v00";
+        abrir(inicial, true);
+        escreve("dossiê montado. digite <b>ajuda</b> para os comandos.");
+      }
+      /* só foca onde existe teclado físico — no celular isso abriria o teclado */
+      if (matchMedia("(hover: hover)").matches) D.el("cmd").focus();
+
+      /* com o enlace de pé, o canal abre */
+      D.trafego.iniciar();
+      /* e o relógio da varredura começa a correr */
+      agendarAzrael(300, 540);
+    }
+
+    /* teclar no botão de som é ligar o som, não pular a inicialização */
+    function pularTudo(e) {
+      if (e && e.target && e.target.closest && e.target.closest("#som-btn")) return;
+      entra();
+    }
+
+    if (reduz) {
+      fixas = ROTEIRO.filter(function (p) { return p.t === "linha" && p.txt; })
+        .map(function (p) { return bl(p.txt); });
+      pinta();
+      pular.textContent = "carregando…";
+      timer = setTimeout(entra, 900);
+      return;
+    }
+
+    pular.textContent = "pressione qualquer tecla para entrar";
+    document.addEventListener("keydown", pularTudo);
+    el.addEventListener("click", pularTudo);
+
+    function fixa(txt) { fixas.push(txt); viva = ""; pinta(); }
+
+    function anima(dur, aoQuadro, aoFim) {
+      var t0 = performance.now();
+      function passoQuadro(agora) {
+        if (encerrado) return;
+        var p = Math.min(1, (agora - t0) / dur);
+        aoQuadro(p, agora);
+        pinta();
+        if (p < 1) quadro = requestAnimationFrame(passoQuadro);
+        else { aoFim(); proximo(); }
+      }
+      quadro = requestAnimationFrame(passoQuadro);
+    }
+
+    function proximo() {
+      if (encerrado) return;
+      if (passo >= ROTEIRO.length) { timer = setTimeout(entra, 1100); return; }
+      var p = ROTEIRO[passo++];
+
+      if (p.t === "linha") {
+        /* só os marcos ganham som: relé nos títulos, sirene na queda */
+        if (/INTERROMPIDA/.test(p.txt)) { D.som.tocar("alarme"); D.som.tocar("estatica"); }
+        else if (/varredura de espectro/.test(p.txt)) D.som.tocar("estatica");
+        else if (/bypass por relé/.test(p.txt)) D.som.tocar("squelch");
+        else if (/class='titulo'/.test(p.txt)) D.som.tocar("rele");
+        fixa(p.txt === "" ? bl("&nbsp;", "vazia") : bl(p.txt));
+        timer = setTimeout(proximo, p.d);
+
+      } else if (p.t === "pausa") {
+        timer = setTimeout(proximo, p.dur);
+
+      } else if (p.t === "tranco") {
+        D.som.tocar("tranco");
+        el.classList.add("tranco");
+        timer = setTimeout(function () { el.classList.remove("tranco"); proximo(); }, 1300);
+
+      } else if (p.t === "status") {
+        /* pontilhado até a direita e um giro enquanto o enlace decide */
+        anima(p.dur, function (frac, agora) {
+          viva = blRot(p.rot, GIRA[Math.floor(agora / 110) % 4]);
+        }, function () {
+          fixa(blRot(p.rot, p.res));
+          D.som.tocar(/FALHA/.test(p.res) ? "falha" : "certo");
+        });
+
+      } else if (p.t === "barra") {
+        /* progresso que trava duas vezes, como convém a um enlace ruim */
+        var ultTique = 0;
+        anima(p.dur, function (frac) {
+          var f = frac < .34 ? frac * 1.5 : (frac < .55 ? .51 : (frac < .78 ? .51 + (frac - .55) * 1.1 : frac));
+          f = Math.min(1, f);
+          if (f - ultTique > .085) { ultTique = f; D.som.tocar(Math.random() < .3 ? "dados" : "tique"); }
+          var cheio = Math.round(f * 22);
+          viva = bl("<span class='barra'>[" + "█".repeat(cheio) + "░".repeat(22 - cheio) + "]</span> " +
+            "<span class='sub'>" + Math.round(f * 100) + "%</span>");
+        }, function () {
+          fixa(bl("<span class='barra'>[" + "█".repeat(22) + "]</span> " + p.fim));
+          D.som.tocar("certo");
+        });
+
+      } else if (p.t === "sinal") {
+        /* medidor que oscila e assenta num valor ruim */
+        D.som.tocar("varrendo");
+        anima(p.dur, function (frac) {
+          var n = "";
+          for (var i = 0; i < 7; i++) {
+            n += BARRAS[frac > .7 ? (i < 2 ? 2 : 0) : Math.floor(Math.random() * 6)];
+          }
+          var dbm = frac > .7 ? -104 : -(70 + Math.floor(Math.random() * 40));
+          viva = blRot("sinal <span class='barra'>" + n + "</span>", dbm + " dBm");
+        }, function () {
+          fixa(blRot("sinal <span class='barra'>" + BARRAS[2] + BARRAS[1] + BARRAS[0].repeat(5) + "</span>",
+            "-104 dBm <span class='fraco'>(fraco)</span>"));
+        });
+
+      } else if (p.t === "ruido") {
+        /* o nome chega corrompido e vai se limpando */
+        D.som.tocar("squelch");
+        var limpo = "NOMAD";
+        anima(p.dur, function (frac) {
+          var s = "";
+          for (var i = 0; i < limpo.length; i++) {
+            s += Math.random() < frac * 1.25 ? limpo[i] : LIXO[Math.floor(Math.random() * LIXO.length)];
+          }
+          viva = blRot(p.rot, "<span class='aviso'>" + s + "</span>");
+        }, function () {
+          fixa(blRot(p.rot, p.res));
+        });
+      }
+    }
+
+    pinta();
+    timer = setTimeout(proximo, 420);
+  }
+
+  rodarBoot();
+})();
+</script>

@@ -1,0 +1,80 @@
+CROSS-COM AUROA
+Compendio de Ghost Recon Breakpoint em formato de terminal tatico
+Perfil do dossie: imersivo, sem nivel de equipamento, solo, sem spoiler de trama
+
+
+COMO ABRIR
+----------
+De um duplo clique em index.html. Abre no navegador, offline, sem instalar
+nada e sem login. Nao existe servidor por tras: e um site estatico.
+
+Mantenha a pasta inteira. Os 11 volumes, o som, o cursor e as ilustracoes
+sao arquivos separados que o index.html carrega pelo nome. Tirar um arquivo
+de lugar ou renomear quebra o conjunto.
+
+Som: o navegador so libera audio depois de um clique seu. Na tela de
+abertura ha um botao para isso, e no rodape ficam os interruptores de som,
+zumbido de fundo e mira.
+
+Fonte: os tipos vem do Google Fonts, entao sem internet a pagina usa uma
+fonte substituta. Todo o resto funciona igual.
+
+
+COMO MANDAR PARA ALGUEM
+-----------------------
+Mande o .zip inteiro. Quem receber descompacta e da duplo clique no
+index.html. Nada pede conta, senha ou conexao.
+
+
+COMO HOSPEDAR NA INTERNET
+-------------------------
+Netlify Drop .... app.netlify.com/drop
+                  Arraste a PASTA (ou o .zip) para a area indicada.
+                  Sai um endereco publico em segundos, sem configurar nada.
+
+GitHub Pages .... Suba os arquivos num repositorio publico e ligue Pages
+                  em Settings > Pages, apontando para a branch principal e
+                  a pasta raiz (/root).
+
+Cloudflare Pages  Direct Upload, mesmo principio do Netlify Drop.
+
+Em qualquer um dos tres, o index.html tem de ficar na RAIZ do que voce
+subir — nao dentro de uma subpasta.
+
+
+O QUE TEM AQUI
+--------------
+index.html ........ o terminal: interface, linha de comando, busca,
+                    trafego de radio e o volume 00
+theme.css ......... paleta e tipografia
+terminal.css ...... a moldura do terminal
+componentes.css ... tabelas, fichas, diagramas
+core.js ........... base comum (registro de volumes, SVG, emblemas)
+figuras.js ........ motor de ilustracao tecnica e as pranchas
+som.js ............ sintese de audio em tempo real (nenhum arquivo de som)
+mira.js ........... cursor de mira
+trafego.js ........ as mensagens de radio ambientes
+vol-a.js .......... volumes 01 a 03
+vol-b.js .......... volumes 04 a 06
+vol-c.js .......... volumes 07 a 10
+
+
+COMANDOS DO TERMINAL
+--------------------
+ajuda ............. lista tudo
+buscar <termo> .... procura em todos os volumes
+indice ............ volta ao sumario
+00 a 10 ........... abre um volume pelo numero
+som / zumbido ..... liga e desliga o audio
+mira .............. liga e desliga o cursor
+radio / canal ..... controla o trafego de mensagens
+azrael ............ controla a interceptacao aleatoria
+silencio .......... corta tudo de uma vez
+
+
+PROCEDENCIA
+-----------
+O volume 00 traz uma secao chamada Procedencia dizendo o que foi conferido
+contra fonte, o que foi corrigido depois de conferir, o que continua sem
+confirmacao e o que e opiniao. Vale ler antes de confiar em qualquer
+conselho de combate daqui.
